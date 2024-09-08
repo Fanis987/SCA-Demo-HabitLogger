@@ -70,45 +70,100 @@ namespace HabitLogger
             }
         }
 
-
-        
-
         private static void PrintAllLogs()
         {
-            using (var connection = new SqliteConnection(_connectionStringCopy))
+            try
             {
-                connection.Open();
-                var command = connection.CreateCommand();
-                command.CommandText = "SELECT * FROM DrinkingWater";
-                var reader = command.ExecuteReader();
-                while (reader.Read())
+                using (var connection = new SqliteConnection(_connectionStringCopy))
                 {
-                    Console.WriteLine($"Id: {reader.GetInt32(0)} Date: {reader.GetDateTime(1)}");
+                    connection.Open();
+                    var command = connection.CreateCommand();
+                    command.CommandText = "SELECT * FROM DrinkingWater";
+                    var reader = command.ExecuteReader();
+                    while (reader.Read())
+                    {
+                        Console.WriteLine($"Id: {reader.GetInt32(0)} Date: {reader.GetDateTime(1)}");
+                    }
+                    connection.Close();
                 }
-                connection.Close();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("An error occured while trying to view logs in the database:");
+                Console.WriteLine(ex.Message);
             }
         }
 
         private static void InsertLog()
         {
-            Console.WriteLine("Please insert date:");
-            string? inputDateStr = Console.ReadLine();
-
-            using (var connection = new SqliteConnection(_connectionStringCopy))
+            //Get date from user or return to menu
+            var date = GetValidDateFromInput();
+            if(date == DateTime.MinValue)
             {
-                connection.Open();
-                var command = connection.CreateCommand();
-                command.CommandText = @"INSERT INTO DrinkingWater (Date)
-                                        VALUES ($date)";
-                command.Parameters.AddWithValue("$date", inputDateStr);
-                var reader = command.ExecuteReader();
-                while (reader.Read())
-                {
-                    Console.WriteLine($"Id: {reader.GetInt32(0)} Date: {reader.GetDateTime(1)}");
-                }
-                connection.Close();
+                Console.WriteLine("Returning to menu\n");
+                return;
             }
+
+            //Insert log in database
+            try
+            {
+                using (var connection = new SqliteConnection(_connectionStringCopy))
+                {
+                    connection.Open();
+                    var command = connection.CreateCommand();
+                    command.CommandText = @"INSERT INTO DrinkingWater (Date)
+                                            VALUES ($date)";
+                    command.Parameters.AddWithValue("$date", date);
+                    var reader = command.ExecuteReader();
+                    while (reader.Read())
+                    {
+                        Console.WriteLine($"Id: {reader.GetInt32(0)} Date: {reader.GetDateTime(1)}");
+                    }
+                    connection.Close();
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("An error occured while trying to insert a log in the database:");
+                Console.WriteLine(ex.Message);
+            }
+            Console.WriteLine("Log inserted successfully\n");
         }
 
+        private static DateTime GetValidDateFromInput()
+        {
+            DateTime date = DateTime.MinValue;
+            string? inputDateStr = "";
+            Console.WriteLine("Please insert date (format:dd-mm-yy) or ) to return to the previous menu:");
+            while (true)//loop until valid date is entered
+            {
+                inputDateStr = Console.ReadLine();
+                
+                if(inputDateStr == "0")//exit check
+                {
+                    return DateTime.MinValue;
+                }
+
+                if(!DateTime.TryParse(inputDateStr, out date))
+                {
+                    Console.WriteLine("Invalid date format. Please insert date again (format:dd-mm-yy):");
+                    continue;
+                }
+
+                if(date > DateTime.Now)
+                {
+                    Console.WriteLine("Date cannot be in the future. Please insert date again (format:dd-mm-yy):");
+                    continue;
+                }
+
+                if(date < new DateTime(2024,1,1))
+                {
+                    Console.WriteLine("Date cannot be before 2024. Please insert date again (format:dd-mm-yy):");
+                    continue;
+                }
+
+                return date;
+            }
+        }
     }
 }
