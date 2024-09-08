@@ -179,7 +179,46 @@ namespace HabitLogger
         //Update Log
         private static void UpdateLog()
         {
+            //Chose id to update
+            int delId;
+            if (!TryGetValidInput(out delId)) return;
 
+            //Get date from user or return to menu
+            var date = GetValidDateFromInput();
+            if (date == DateTime.MinValue)
+            {
+                Console.WriteLine("Returning to menu\n");
+                return;
+            }
+
+            //Try update log in database
+            try
+            {
+                using (var connection = new SqliteConnection(_connectionStringCopy))
+                {
+                    connection.Open();
+                    var command = connection.CreateCommand();
+                    command.CommandText = @"UPDATE DrinkingWater
+                                            SET Date = ($date)
+                                            WHERE Id = ($id)";
+                    command.Parameters.AddWithValue("$id", delId);
+                    command.Parameters.AddWithValue("$date", date);
+                    int rowsAffected = command.ExecuteNonQuery();
+                    if (rowsAffected == 0)
+                    {
+                        Console.WriteLine("No log with that id found. NO changes were made\n");
+                        return;
+                    }
+                    connection.Close();
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("An error occured while trying to update a log in the database:");
+                Console.WriteLine(ex.Message);
+                return;
+            }
+            Console.WriteLine("Desired log updated successfully\n");
         }
 
         //Delete Log
@@ -266,7 +305,6 @@ namespace HabitLogger
                 return;
             }
             Console.WriteLine("All logs deleted successfully\n");
-
         }
 
         private static bool IsConfirmedRequest()
