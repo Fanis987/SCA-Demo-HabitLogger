@@ -20,25 +20,6 @@ if(string.IsNullOrEmpty(connectionString))
 }
 InputHandler.SetConnectionStringCopy(connectionString);
 
-
-//Create a connection to the database
-try
-{
-    using (var connection = new SqliteConnection(connectionString) )
-    {
-        connection.Open();
-        var command = connection.CreateCommand();
-        command.CommandText = "";
-        command.ExecuteNonQuery();
-        connection.Close();
-    }
-}
-catch (Exception ex)
-{
-    Console.WriteLine("An error occured while connecting to the database:");
-    Console.WriteLine(ex.Message);
-}
-
 //create a table in the database
 try
 {
