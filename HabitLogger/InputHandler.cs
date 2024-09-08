@@ -144,7 +144,7 @@ namespace HabitLogger
         {
             DateTime date = DateTime.MinValue;
             string? inputDateStr = "";
-            Console.WriteLine("Please insert date (format:dd-mm-yy) or ) to return to the previous menu:");
+            Console.WriteLine("Please insert date (format:dd-mm-yy) or 0 to return to the previous menu:");
             while (true)//loop until valid date is entered
             {
                 inputDateStr = Console.ReadLine();
@@ -185,7 +185,58 @@ namespace HabitLogger
         //Delete Log
         private static void DeleteLog()
         {
+            //Chose id to delete
+            int delId;
+            if(!TryGetValidInput(out delId)) return;
 
+            //check if user is sure
+            Console.WriteLine("Are you sure you want to delete the log with id: " + delId + "? (y/n)");
+            if (!IsConfirmedRequest()) return;
+
+            //Insert log in database
+            try
+            {
+                using (var connection = new SqliteConnection(_connectionStringCopy))
+                {
+                    connection.Open();
+                    var command = connection.CreateCommand();
+                    //delete all rows from the table
+                    command.CommandText = @"DELETE FROM DrinkingWater
+                                            WHERE Id = ($id)";
+                    command.Parameters.AddWithValue("$id", delId);
+                    int rowsAffected = command.ExecuteNonQuery(); 
+                    if(rowsAffected == 0)
+                    {
+                        Console.WriteLine("No log with that id found. NO changes were made\n");
+                        return;
+                    }
+                    connection.Close();
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("An error occured while trying to delete a log in the database:");
+                Console.WriteLine(ex.Message);
+                return;
+            }
+            Console.WriteLine("Desired log deleted successfully\n");
+        }
+
+        private static bool TryGetValidInput(out int id)
+        {
+            string? inputStr = "dummy";
+
+            while (! int.TryParse(inputStr, out id))
+            {
+                Console.WriteLine("Please insert the id of the log you want to delete or 'e' to return to the previous menu:");
+                inputStr = Console.ReadLine();
+                if (inputStr == "e")
+                {
+                    id = -1;
+                    return false;
+                }
+            }
+            return true;
         }
 
         //Delete all logs
@@ -193,12 +244,7 @@ namespace HabitLogger
         {
             //check if user is sure
             Console.WriteLine("Are you sure you want to delete all logs? (y/n)");
-            string? checkInput = Console.ReadLine();
-            if(checkInput != "y")
-            {
-                Console.WriteLine("Returning to menu\n");
-                return;
-            }
+            if(!IsConfirmedRequest()) return;
             
             //Insert log in database
             try
@@ -221,6 +267,17 @@ namespace HabitLogger
             }
             Console.WriteLine("All logs deleted successfully\n");
 
+        }
+
+        private static bool IsConfirmedRequest()
+        {
+            string? checkInput = Console.ReadLine();
+            if (checkInput != "y")
+            {
+                Console.WriteLine("Returning to menu...\n");
+                return false;
+            }
+            return true;
         }
     }
 }
