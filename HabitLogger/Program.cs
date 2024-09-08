@@ -1,5 +1,4 @@
 ﻿//MAIN PROGRAM
-
 using HabitLogger;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Configuration;
@@ -20,7 +19,7 @@ if(string.IsNullOrEmpty(connectionString))
 }
 InputHandler.SetConnectionStringCopy(connectionString);
 
-//create a table in the database
+//create a table in the database if it does not exist
 try
 {
     using (var connection = new SqliteConnection(connectionString))
@@ -42,15 +41,13 @@ catch (Exception ex)
     Console.WriteLine(ex.Message);
 }
 
+//Main loop
 while (true)
 {
     int input;
-    if (InputHandler.TryGetChoiceInput(out input))
+    if (InputHandler.TryGetChoiceInput(out input,5))
     {
         InputHandler.HandleInput(input);
     };
-    
+
 }
-
-
-

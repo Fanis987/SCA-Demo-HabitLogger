@@ -1,11 +1,10 @@
 ﻿using Microsoft.Data.Sqlite;
-using System.Net.NetworkInformation;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace HabitLogger
 {
     internal class InputHandler
     {
+        //A copy of connection string for SQL operations
         private static string _connectionStringCopy = "";
 
         internal static void SetConnectionStringCopy(string connectionString)
@@ -13,63 +12,51 @@ namespace HabitLogger
             _connectionStringCopy = connectionString;
         }
 
-        internal static bool TryGetChoiceInput(out int input)
-        {
-            PrintOptions();
-            string? inputStr = Console.ReadLine();
-            if(int.TryParse(inputStr, out input))
-            {
-                if(!(input >= 0 && input <= 5))
-                {
-                    Console.WriteLine("Input must be between 0-5, please try again");
-                    return false;
-                }
-                return true;
-            }
-            else
-            {
-                Console.WriteLine("Invalid input, please try again");
-                return false;
-            }
-        }
-
+        /// <summary>
+        /// Prints the main options for the user to choose from
+        /// </summary>
         internal static void PrintOptions()
         {
             Console.WriteLine("\nPress the number of the option you want");
             Console.WriteLine("0 : Exit Program");
             Console.WriteLine("1 : View habit logs");
-            Console.WriteLine("2 :Insert habit log");
-            Console.WriteLine("3 :Update habit log");
-            Console.WriteLine("4 :Delete habit log");
-            Console.WriteLine("5 :Delete all habit logs\n");
+            Console.WriteLine("2 : Insert habit log");
+            Console.WriteLine("3 : Update habit log");
+            Console.WriteLine("4 : Delete habit log");
+            Console.WriteLine("5 : Delete all habit logs\n");
         }
 
+        /// <summary>
+        /// Handles the user input and calls the appropriate method.
+        /// </summary>
+        /// <param name="input"> User's input number</param>
         internal static void HandleInput(int input)
         {
+            if(_connectionStringCopy == "")
+            {
+                Console.WriteLine("Connection string was not properly set. Exiting program");
+                Environment.Exit(0);
+            }
+
             switch(input) 
             {
                 case 0:
-                    Console.WriteLine("Exiting program");
+                    Console.WriteLine("Exiting program...");
                     Environment.Exit(0);
                     break;
                 case 1:
-                    Console.WriteLine("Viewing habit logs:");
                     PrintAllLogs();
                     break;
                 case 2:
-                    Console.WriteLine("Adding a new log to habit:");
                     InsertLog();
                     break;
                 case 3:
-                    Console.WriteLine("Updating a habit log:");
                     UpdateLog();
                     break;
                 case 4:
-                    Console.WriteLine("Deleting a habit log:");
                     DeleteLog();
                     break;
                 case 5:
-                    Console.WriteLine("Delete all logs");
                     DeleteAllLogs();
                     break;
                 default:
@@ -78,6 +65,34 @@ namespace HabitLogger
             }
         }
 
+        /// <summary>
+        /// Helper method to get valid user input for the main menu
+        /// </summary>
+        /// <param name="input">the</param>
+        /// <returns> Whether a valid input was obtained</returns>
+        internal static bool TryGetChoiceInput(out int input, int optionsNum)
+        {
+            PrintOptions();
+            string? inputStr = Console.ReadLine();
+            if(int.TryParse(inputStr, out input))
+            {
+                if(!(input >= 0 && input <= optionsNum))
+                {
+                    Console.WriteLine($"Input must be between 0-{optionsNum}, please try again");
+                    return false;
+                }
+                return true;
+            }
+            else
+            {
+                Console.WriteLine("Invalid input, please try again with a number");
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Prints all logs in the database
+        /// </summary>
         private static void PrintAllLogs()
         {
             try
@@ -103,6 +118,9 @@ namespace HabitLogger
             }
         }
 
+        /// <summary>
+        /// Inserts a log in the database
+        /// </summary>
         private static void InsertLog()
         {
             //Get date from user or return to menu
@@ -123,11 +141,9 @@ namespace HabitLogger
                     command.CommandText = @"INSERT INTO DrinkingWater (Date)
                                             VALUES ($date)";
                     command.Parameters.AddWithValue("$date", date);
-                    var reader = command.ExecuteReader();
-                    while (reader.Read())
-                    {
-                        Console.WriteLine($"Id: {reader.GetInt32(0)} Date: {reader.GetDateTime(1)}");
-                    }
+
+                    Console.WriteLine("Adding a new log to habit:");
+                    command.ExecuteNonQuery();
                     connection.Close();
                 }
             }
@@ -140,11 +156,15 @@ namespace HabitLogger
             Console.WriteLine("Log inserted successfully\n");
         }
 
+        /// <summary>
+        /// Helper method to get a valid date from the user.
+        /// </summary>
+        /// <returns> The DateTime from user's input.</returns>
         private static DateTime GetValidDateFromInput()
         {
             DateTime date = DateTime.MinValue;
             string? inputDateStr = "";
-            Console.WriteLine("Please insert date (format:dd-mm-yy) or 0 to return to the previous menu:");
+            Console.WriteLine("Please insert date (format:dd-mm-yy) or 'e' to return to the previous menu:");
             while (true)//loop until valid date is entered
             {
                 inputDateStr = Console.ReadLine();
@@ -176,7 +196,9 @@ namespace HabitLogger
             }
         }
 
-        //Update Log
+        /// <summary>
+        ///  Updates a log in the database.
+        /// </summary>
         private static void UpdateLog()
         {
             //Chose id to update
@@ -206,7 +228,7 @@ namespace HabitLogger
                     int rowsAffected = command.ExecuteNonQuery();
                     if (rowsAffected == 0)
                     {
-                        Console.WriteLine("No log with that id found. NO changes were made\n");
+                        Console.WriteLine("No log with that id found. No changes were made\n");
                         return;
                     }
                     connection.Close();
@@ -221,7 +243,9 @@ namespace HabitLogger
             Console.WriteLine("Desired log updated successfully\n");
         }
 
-        //Delete Log
+        /// <summary>
+        ///  Deletes a log in the database.
+        /// </summary>
         private static void DeleteLog()
         {
             //Chose id to delete
@@ -229,7 +253,7 @@ namespace HabitLogger
             if(!TryGetValidInput(out delId)) return;
 
             //check if user is sure
-            Console.WriteLine("Are you sure you want to delete the log with id: " + delId + "? (y/n)");
+            Console.WriteLine($"Are you sure you want to delete the log with id: {delId }? (y/n)");
             if (!IsConfirmedRequest()) return;
 
             //Insert log in database
@@ -246,7 +270,7 @@ namespace HabitLogger
                     int rowsAffected = command.ExecuteNonQuery(); 
                     if(rowsAffected == 0)
                     {
-                        Console.WriteLine("No log with that id found. NO changes were made\n");
+                        Console.WriteLine("No log with that id found. No changes were made\n");
                         return;
                     }
                     connection.Close();
@@ -261,11 +285,15 @@ namespace HabitLogger
             Console.WriteLine("Desired log deleted successfully\n");
         }
 
+        /// <summary>
+        /// Checks if the input is a valid integer and returns it.
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
         private static bool TryGetValidInput(out int id)
         {
-            string? inputStr = "dummy";
-
-            while (! int.TryParse(inputStr, out id))
+            string inputStr;
+            while(true)
             {
                 Console.WriteLine("Please insert the id of the log you want to delete or 'e' to return to the previous menu:");
                 inputStr = Console.ReadLine();
@@ -274,11 +302,18 @@ namespace HabitLogger
                     id = -1;
                     return false;
                 }
+                if (!int.TryParse(inputStr, out id))
+                {
+                    Console.WriteLine("Invalid input. Please insert a number:");
+                    continue;
+                }
+                return true;
             }
-            return true;
         }
 
-        //Delete all logs
+        /// <summary>
+        /// Deletes all logs in the database.
+        /// </summary>
         private static void DeleteAllLogs()
         {
             //check if user is sure
