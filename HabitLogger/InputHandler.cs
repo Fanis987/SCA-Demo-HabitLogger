@@ -1,11 +1,18 @@
-﻿using System.Net.NetworkInformation;
+﻿using Microsoft.Data.Sqlite;
+using System.Net.NetworkInformation;
 
 namespace HabitLogger
 {
     internal class InputHandler
     {
+        private static string _connectionStringCopy = "";
 
-        internal static bool TryGetInput(out int input)
+        internal static void SetConnectionStringCopy(string connectionString)
+        {
+            _connectionStringCopy = connectionString;
+        }
+
+        internal static bool TryGetChoiceInput(out int input)
         {
             PrintOptions();
             string? inputStr = Console.ReadLine();
@@ -44,21 +51,64 @@ namespace HabitLogger
                     Environment.Exit(0);
                     break;
                 case 1:
-                    Console.WriteLine("Viewing habit logs");
+                    Console.WriteLine("Viewing habit logs:");
+                    PrintAllLogs();
                     break;
                 case 2:
-                    Console.WriteLine("Adding a new log to habit");
+                    Console.WriteLine("Adding a new log to habit:");
+                    InsertLog();
                     break;
                 case 3:
-                    Console.WriteLine("Updating a habit log");
+                    Console.WriteLine("Updating a habit log:");
                     break;
                 case 4:
-                    Console.WriteLine("Deleting a habit log");
+                    Console.WriteLine("Deleting a habit log:");
                     break;
                 default:
                     Console.WriteLine("Invalid option, please try again");
                     break;
             }
         }
+
+
+        
+
+        private static void PrintAllLogs()
+        {
+            using (var connection = new SqliteConnection(_connectionStringCopy))
+            {
+                connection.Open();
+                var command = connection.CreateCommand();
+                command.CommandText = "SELECT * FROM DrinkingWater";
+                var reader = command.ExecuteReader();
+                while (reader.Read())
+                {
+                    Console.WriteLine($"Id: {reader.GetInt32(0)} Date: {reader.GetDateTime(1)}");
+                }
+                connection.Close();
+            }
+        }
+
+        private static void InsertLog()
+        {
+            Console.WriteLine("Please insert date:");
+            string? inputDateStr = Console.ReadLine();
+
+            using (var connection = new SqliteConnection(_connectionStringCopy))
+            {
+                connection.Open();
+                var command = connection.CreateCommand();
+                command.CommandText = @"INSERT INTO DrinkingWater (Date)
+                                        VALUES ($date)";
+                command.Parameters.AddWithValue("$date", inputDateStr);
+                var reader = command.ExecuteReader();
+                while (reader.Read())
+                {
+                    Console.WriteLine($"Id: {reader.GetInt32(0)} Date: {reader.GetDateTime(1)}");
+                }
+                connection.Close();
+            }
+        }
+
     }
 }

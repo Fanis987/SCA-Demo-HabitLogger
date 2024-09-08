@@ -18,6 +18,7 @@ if(string.IsNullOrEmpty(connectionString))
     Console.WriteLine("Exiting...");
     Environment.Exit(1);
 }
+InputHandler.SetConnectionStringCopy(connectionString);
 
 
 //Create a connection to the database
@@ -63,7 +64,7 @@ catch (Exception ex)
 while (true)
 {
     int input;
-    if (InputHandler.TryGetInput(out input))
+    if (InputHandler.TryGetChoiceInput(out input))
     {
         InputHandler.HandleInput(input);
     };
