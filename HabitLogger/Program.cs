@@ -18,10 +18,11 @@ if(string.IsNullOrEmpty(connectionString))
     Environment.Exit(1);
 }
 
+//Make an instance of the input handler
 InputHandler handler = new ();
 handler.SetConnectionStringCopy(connectionString);
 
-//create a table in the database if it does not exist
+//Create a default table in the database for "drinking water"
 try
 {
     using (var connection = new SqliteConnection(connectionString))

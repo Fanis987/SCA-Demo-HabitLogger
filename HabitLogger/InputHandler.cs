@@ -5,9 +5,8 @@ namespace HabitLogger
 {
     internal class InputHandler
     {
-        private bool _habitMenuDisplayed = true;
-
         //Support For multiple habits
+        private bool _habitMenuDisplayed = true;
         private string _activeHabit = "";
 
         //A copy of connection string for SQL operations
@@ -18,7 +17,10 @@ namespace HabitLogger
             _connectionStringCopy = connectionString;
         }
 
-        //====Menu Selector====
+        //====Menu Selector==============================================================================================
+        /// <summary>
+        /// Displays a menu based on the current state of the program.
+        /// </summary>
         internal void DisplayMenu()
         {
             if (_habitMenuDisplayed)
@@ -35,12 +37,12 @@ namespace HabitLogger
             }
         }
 
-        //====Habit Menu====
+        //====Habit Menu==============================================================================================
         /// <summary>
-        /// Display the habit menu options for the user to choose from.
+        /// Displays the habit menu options for the user to choose from.
         /// </summary>
         /// <param name="input"></param>
-        internal void PrintHabitOptions()
+        private void PrintHabitOptions()
         {
             Console.WriteLine("\nPress the number of the option you want");
             Console.WriteLine("0 : Exit Program");
@@ -53,10 +55,10 @@ namespace HabitLogger
         }
 
         /// <summary>
-        /// Handle user's input and call the appropriate method.
+        /// Handles user's input and calls the appropriate method.
         /// </summary>
         /// <param name="input"></param>
-        internal void HandleHabitMenuInput(int input)
+        private void HandleHabitMenuInput(int input)
         {
             if (_connectionStringCopy == "")
             {
@@ -102,9 +104,9 @@ namespace HabitLogger
         }
 
         /// <summary>
-        /// Get all active habits from the database table names
+        /// Gets all active habits from the database's table names
         /// </summary>
-        /// <returns></returns>
+        /// <returns>A list of the active habit names</returns>
         private List<string> GetActiveHabits()
         {
             List<string> habits = new();
@@ -135,7 +137,7 @@ namespace HabitLogger
         }
 
         /// <summary>
-        /// Setting the active habit
+        /// Sets the active habit tot he user's selection, if the latter is valid.
         /// </summary>
         private void SetActiveHabit()
         {
@@ -163,9 +165,9 @@ namespace HabitLogger
         }
 
         /// <summary>
-        /// Create a new habit table in the database
+        /// Creates a new habit table in the database based on user's input.
         /// </summary>
-        internal void InsertHabit()
+        private void InsertHabit()
         {
             //get input from user
             Console.WriteLine("Please insert the name of the habit you want to add or 'e' to return to menu:");
@@ -199,11 +201,11 @@ namespace HabitLogger
         }
 
         /// <summary>
-        /// Helper method to check if the word is a valid habit name
+        /// Helper method that checks if the provided word is a valid habit name.
         /// </summary>
-        /// <param name="word"></param>
-        /// <returns></returns>
-        internal bool IsValidWord(string? word)
+        /// <param name="word">The input from user.</param>
+        /// <returns>A boolean describing wheter the input is valid</returns>
+        private bool IsValidWord(string? word)
         {
             if (string.IsNullOrEmpty(word))
             {
@@ -227,6 +229,9 @@ namespace HabitLogger
             return true;
         }
 
+        /// <summary>
+        /// Deletes a habit from the database, based on user's input.
+        /// </summary>
         private void DeleteHabit()
         {
             //get input from user
@@ -245,7 +250,7 @@ namespace HabitLogger
                 return;
             }
 
-            //Create table in database with the name of the habit
+            //Delete table in database with the name of the habit
             try
             {
                 using (var connection = new SqliteConnection(_connectionStringCopy))
@@ -285,7 +290,7 @@ namespace HabitLogger
         /// <summary>
         /// Prints the main options for the user to choose from
         /// </summary>
-        internal void PrintLogOptions()
+        private void PrintLogOptions()
         {
             Console.WriteLine("\nPress the number of the option you want");
             Console.WriteLine("0 : Exit Program");
@@ -302,7 +307,7 @@ namespace HabitLogger
         /// Handles the user input and calls the appropriate method.
         /// </summary>
         /// <param name="input"> User's input number</param>
-        internal void HandleLogMenuInput(int input)
+        private void HandleLogMenuInput(int input)
         {
             if (_connectionStringCopy == "")
             {
@@ -345,7 +350,7 @@ namespace HabitLogger
         /// </summary>
         /// <param name="input">the</param>
         /// <returns> Whether a valid input was obtained</returns>
-        internal bool TryGetChoiceInput(out int input, int optionsNum)
+        private bool TryGetChoiceInput(out int input, int optionsNum)
         {
             string? inputStr = Console.ReadLine();
             if (int.TryParse(inputStr, out input))
@@ -443,7 +448,7 @@ namespace HabitLogger
             {
                 inputDateStr = Console.ReadLine();
 
-                if (inputDateStr == "0")//exit check
+                if (inputDateStr == "e")//exit check
                 {
                     return DateTime.MinValue;
                 }
@@ -563,7 +568,7 @@ namespace HabitLogger
         /// Checks if the input is a valid integer and returns it.
         /// </summary>
         /// <param name="id"></param>
-        /// <returns></returns>
+        /// <returns>Whether the input is valid</returns>
         private bool TryGetValidInput(out int id)
         {
             string inputStr;
@@ -616,6 +621,10 @@ namespace HabitLogger
             Console.WriteLine("All logs deleted successfully\n");
         }
 
+        /// <summary>
+        /// Checks if the user is sure about the request.
+        /// </summary>
+        /// <returns> Confirmation from the user</returns>
         private bool IsConfirmedRequest()
         {
             string? checkInput = Console.ReadLine();
