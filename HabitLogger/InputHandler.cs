@@ -1,9 +1,14 @@
 ﻿using Microsoft.Data.Sqlite;
+using System.Text.RegularExpressions;
 
 namespace HabitLogger
 {
     internal class InputHandler
     {
+        //Support For multiple habits
+        private static List<string> _habits = new List<string>();
+        private static string _activeHabit = "";
+        
         //A copy of connection string for SQL operations
         private static string _connectionStringCopy = "";
 
@@ -12,10 +17,105 @@ namespace HabitLogger
             _connectionStringCopy = connectionString;
         }
 
+
+        //====Habit Menu====
+        internal static void PrintHabitOptions()
+        {
+            Console.WriteLine("\nPress the number of the option you want");
+            Console.WriteLine("0 : Exit Program");
+            Console.WriteLine("1 : View active habits");
+            Console.WriteLine("2 : Set active habit");
+            Console.WriteLine("3 : Insert a new habit");
+            Console.WriteLine("4 : Delete a habit\n");
+        }
+
+        internal static void HandleHabitMenuInput(int input)
+        {
+            if (_connectionStringCopy == "")
+            {
+                Console.WriteLine("Connection string was not properly set. Exiting program");
+                Environment.Exit(0);
+            }
+
+            switch (input)
+            {
+                case 0:
+                    Console.WriteLine("Exiting program...");
+                    Environment.Exit(0);
+                    break;
+                case 1:
+                    //View active habits
+                    break;
+                case 2:
+                    //Set active habit
+                    break;
+                case 3:
+                    //Insert a new habit
+                    InsertHabit();
+                    break;
+                case 4:
+                    //Delete a habit
+                    break;
+                default:
+                    Console.WriteLine("Invalid option, please try again");
+                    break;
+            }
+        }
+
+        internal static void InsertHabit()
+        {
+            //habit name check
+            Console.WriteLine("Please insert the name of the habit you want to add or 'e' to return to menu:");
+            string habitName = Console.ReadLine();
+            if (habitName == "e")
+            {
+                Console.WriteLine("Returning to menu\n");
+                return;
+            }
+            if (string.IsNullOrEmpty(habitName))
+            {
+                Console.WriteLine("Habit name cannot be empty. Returning to menu\n");
+                return;
+            }
+
+            //safety check
+            if(!Regex.IsMatch(habitName, @"^[a-zA-Z0-9_]+$"))
+            {
+                Console.WriteLine("Habit name can only contain letters, numbers and underscores. Returning to menu\n");
+                return;
+            }
+
+            //Create table in database with the name of the habit
+            try
+            {
+                using (var connection = new SqliteConnection(_connectionStringCopy))
+                {
+                    connection.Open();
+                    var command = connection.CreateCommand();
+                    command.CommandText = $@" CREATE TABLE IF NOT EXISTS [{habitName}] (
+                                            Id INTEGER PRIMARY KEY,
+                                            Date DATE NOT NULL
+                                            )";
+                    command.ExecuteNonQuery();
+                    connection.Close();
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("An error occured while trying to insert a habit in the database:");
+                Console.WriteLine(ex.Message);
+                return;
+            }
+
+            _habits.Add(habitName);
+            Console.WriteLine("A new Habit was created successfully\n");
+        }
+
+        //====Log Menu====
         /// <summary>
         /// Prints the main options for the user to choose from
         /// </summary>
-        internal static void PrintOptions()
+        internal static void PrintLogOptions()
         {
             Console.WriteLine("\nPress the number of the option you want");
             Console.WriteLine("0 : Exit Program");
@@ -30,7 +130,7 @@ namespace HabitLogger
         /// Handles the user input and calls the appropriate method.
         /// </summary>
         /// <param name="input"> User's input number</param>
-        internal static void HandleInput(int input)
+        internal static void HandleLogMenuInput(int input)
         {
             if(_connectionStringCopy == "")
             {
@@ -72,7 +172,6 @@ namespace HabitLogger
         /// <returns> Whether a valid input was obtained</returns>
         internal static bool TryGetChoiceInput(out int input, int optionsNum)
         {
-            PrintOptions();
             string? inputStr = Console.ReadLine();
             if(int.TryParse(inputStr, out input))
             {

@@ -44,10 +44,8 @@ catch (Exception ex)
 //Main loop
 while (true)
 {
+    InputHandler.PrintHabitOptions();
     int input;
-    if (InputHandler.TryGetChoiceInput(out input,5))
-    {
-        InputHandler.HandleInput(input);
-    };
-
+    InputHandler.TryGetChoiceInput(out input,4);
+    InputHandler.HandleHabitMenuInput(input);
 }
