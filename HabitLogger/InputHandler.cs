@@ -52,6 +52,7 @@ namespace HabitLogger
                     break;
                 case 1:
                     //View active habits
+                    Console.WriteLine("Active Habits:");
                     List<string> habits = GetActiveHabits();
                     foreach (var habit in habits)
                     {
@@ -68,6 +69,7 @@ namespace HabitLogger
                     break;
                 case 4:
                     //Delete a habit
+                    DeleteHabit();
                     break;
                 default:
                     Console.WriteLine("Invalid option, please try again");
@@ -93,7 +95,6 @@ namespace HabitLogger
                                             ORDER BY name;";
                     var reader = command.ExecuteReader();
 
-                    Console.WriteLine("Active Habits:");
                     while (reader.Read())
                     {
                         habits.Add(reader.GetString(0));
@@ -170,7 +171,7 @@ namespace HabitLogger
                 Console.WriteLine(ex.Message);
                 return;
             }
-            Console.WriteLine("A new Habit was created successfully\n");
+            Console.WriteLine($"Habit '{habitName}' was created successfully\n");
         }
 
         /// <summary>
@@ -201,7 +202,46 @@ namespace HabitLogger
             return true;
         }
 
-        //====Log Menu====
+        private static void DeleteHabit()
+        {
+            //get input from user
+            Console.WriteLine("Please insert the name of the habit you want to delete or 'e' to return to menu:");
+            string? habitName = Console.ReadLine();
+
+            //habit name check
+            if (!IsValidWord(habitName)) return;
+
+            //existance check
+            List<string> habits = GetActiveHabits();
+            if (!habits.Contains(habitName))
+            {
+                Console.WriteLine($"Requested habit '{habitName}' does not exist. Please check the active habits list.");
+                Console.WriteLine("Returning to menu\n");
+                return;
+            }
+
+            //Create table in database with the name of the habit
+            try
+            {
+                using (var connection = new SqliteConnection(_connectionStringCopy))
+                {
+                    connection.Open();
+                    var command = connection.CreateCommand();
+                    command.CommandText = $@" DROP TABLE IF EXISTS [{habitName}]";
+                    command.ExecuteNonQuery();
+                    connection.Close();
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("An error occured while trying to delete a habit from the database:");
+                Console.WriteLine(ex.Message);
+                return;
+            }
+            Console.WriteLine($"Habit '{habitName}' was deleted successfully\n");
+        }
+
+        //====Log Menu==============================================================================================
         /// <summary>
         /// Prints the main options for the user to choose from
         /// </summary>
