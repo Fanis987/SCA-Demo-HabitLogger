@@ -6,7 +6,6 @@ namespace HabitLogger
     internal class InputHandler
     {
         //Support For multiple habits
-        private static List<string> _habits = new List<string>();
         private static string _activeHabit = "";
         
         //A copy of connection string for SQL operations
@@ -45,6 +44,7 @@ namespace HabitLogger
                     break;
                 case 1:
                     //View active habits
+                    GetActiveHabits();
                     break;
                 case 2:
                     //Set active habit
@@ -62,23 +62,52 @@ namespace HabitLogger
             }
         }
 
+        private static void GetActiveHabits()
+        {
+            try
+            {
+                using (var connection = new SqliteConnection(_connectionStringCopy))
+                {
+                    connection.Open();
+                    var command = connection.CreateCommand();
+                    command.CommandText = @"SELECT name FROM sqlite_schema
+                                            WHERE type = 'table'
+                                            ORDER BY name;";
+                    var reader = command.ExecuteReader();
+
+                    Console.WriteLine("Active Habits:");
+                    while (reader.Read())
+                    {
+                        Console.WriteLine($"Habit: {reader.GetString(0)}");
+                    }
+                    connection.Close();
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("An error occured while trying to insert a habit in the database:");
+                Console.WriteLine(ex.Message);
+                return;
+            }
+        }
+
         internal static void InsertHabit()
         {
             //habit name check
             Console.WriteLine("Please insert the name of the habit you want to add or 'e' to return to menu:");
-            string habitName = Console.ReadLine();
-            if (habitName == "e")
-            {
-                Console.WriteLine("Returning to menu\n");
-                return;
-            }
+            string? habitName = Console.ReadLine();
             if (string.IsNullOrEmpty(habitName))
             {
                 Console.WriteLine("Habit name cannot be empty. Returning to menu\n");
                 return;
             }
+            if (habitName == "e")
+            {
+                Console.WriteLine("Returning to menu\n");
+                return;
+            }
 
-            //safety check
+            //safety check vs SQL injection attacks
             if(!Regex.IsMatch(habitName, @"^[a-zA-Z0-9_]+$"))
             {
                 Console.WriteLine("Habit name can only contain letters, numbers and underscores. Returning to menu\n");
@@ -106,8 +135,6 @@ namespace HabitLogger
                 Console.WriteLine(ex.Message);
                 return;
             }
-
-            _habits.Add(habitName);
             Console.WriteLine("A new Habit was created successfully\n");
         }
 
