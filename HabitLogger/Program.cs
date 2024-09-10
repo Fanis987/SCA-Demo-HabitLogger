@@ -17,7 +17,9 @@ if(string.IsNullOrEmpty(connectionString))
     Console.WriteLine("Exiting...");
     Environment.Exit(1);
 }
-InputHandler.SetConnectionStringCopy(connectionString);
+
+InputHandler handler = new ();
+handler.SetConnectionStringCopy(connectionString);
 
 //create a table in the database if it does not exist
 try
@@ -44,8 +46,5 @@ catch (Exception ex)
 //Main loop
 while (true)
 {
-    InputHandler.PrintHabitOptions();
-    int input;
-    InputHandler.TryGetChoiceInput(out input,4);
-    InputHandler.HandleHabitMenuInput(input);
+    handler.DisplayMenu();
 }

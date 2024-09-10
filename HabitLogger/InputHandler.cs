@@ -5,38 +5,58 @@ namespace HabitLogger
 {
     internal class InputHandler
     {
-        //Support For multiple habits
-        private static string _activeHabit = "";
-        
-        //A copy of connection string for SQL operations
-        private static string _connectionStringCopy = "";
+        private bool _habitMenuDisplayed = true;
 
-        internal static void SetConnectionStringCopy(string connectionString)
+        //Support For multiple habits
+        private string _activeHabit = "";
+
+        //A copy of connection string for SQL operations
+        private string _connectionStringCopy = "";
+
+        internal void SetConnectionStringCopy(string connectionString)
         {
             _connectionStringCopy = connectionString;
         }
 
+        //====Menu Selector====
+        internal void DisplayMenu()
+        {
+            if (_habitMenuDisplayed)
+            {
+                PrintHabitOptions();
+                TryGetChoiceInput(out int input, 5);
+                HandleHabitMenuInput(input);
+            }
+            else
+            {
+                PrintLogOptions();
+                TryGetChoiceInput(out int input, 6);
+                HandleLogMenuInput(input);
+            }
+        }
 
         //====Habit Menu====
         /// <summary>
         /// Display the habit menu options for the user to choose from.
         /// </summary>
         /// <param name="input"></param>
-        internal static void PrintHabitOptions()
+        internal void PrintHabitOptions()
         {
             Console.WriteLine("\nPress the number of the option you want");
             Console.WriteLine("0 : Exit Program");
             Console.WriteLine("1 : View active habits");
             Console.WriteLine("2 : Set active habit");
             Console.WriteLine("3 : Insert a new habit");
-            Console.WriteLine("4 : Delete a habit\n");
+            Console.WriteLine("4 : Delete a habit");
+            Console.WriteLine("5 : Access logs of active habit\n");
+            Console.WriteLine((_activeHabit == "") ? "No active habit set\n" : $"Active Habit: {_activeHabit}\n");
         }
 
         /// <summary>
         /// Handle user's input and call the appropriate method.
         /// </summary>
         /// <param name="input"></param>
-        internal static void HandleHabitMenuInput(int input)
+        internal void HandleHabitMenuInput(int input)
         {
             if (_connectionStringCopy == "")
             {
@@ -71,6 +91,10 @@ namespace HabitLogger
                     //Delete a habit
                     DeleteHabit();
                     break;
+                case 5:
+                    //Switch to log menu
+                    SwitchToLogMenu();
+                    break;
                 default:
                     Console.WriteLine("Invalid option, please try again");
                     break;
@@ -81,9 +105,9 @@ namespace HabitLogger
         /// Get all active habits from the database table names
         /// </summary>
         /// <returns></returns>
-        private static List<string> GetActiveHabits()
+        private List<string> GetActiveHabits()
         {
-            List<string> habits = new List<string>();
+            List<string> habits = new();
             try
             {
                 using (var connection = new SqliteConnection(_connectionStringCopy))
@@ -113,13 +137,13 @@ namespace HabitLogger
         /// <summary>
         /// Setting the active habit
         /// </summary>
-        private static void SetActiveHabit()
+        private void SetActiveHabit()
         {
             //get all active habits
             List<string> habits = GetActiveHabits();
 
             //get input from user
-            Console.WriteLine("Please insert the name of the habit you want to add or 'e' to return to menu:");
+            Console.WriteLine("Please insert the name of the habit you want to set as active or 'e' to return to menu:");
             string? habitName = Console.ReadLine();
 
             //habit name check
@@ -141,12 +165,12 @@ namespace HabitLogger
         /// <summary>
         /// Create a new habit table in the database
         /// </summary>
-        internal static void InsertHabit()
+        internal void InsertHabit()
         {
             //get input from user
             Console.WriteLine("Please insert the name of the habit you want to add or 'e' to return to menu:");
             string? habitName = Console.ReadLine();
-            
+
             //habit name check
             if (!IsValidWord(habitName)) return;
 
@@ -179,7 +203,7 @@ namespace HabitLogger
         /// </summary>
         /// <param name="word"></param>
         /// <returns></returns>
-        internal static bool IsValidWord(string? word)
+        internal bool IsValidWord(string? word)
         {
             if (string.IsNullOrEmpty(word))
             {
@@ -193,16 +217,17 @@ namespace HabitLogger
                 return false;
             }
 
-            //safety check vs SQL injection attacks
-            if (!Regex.IsMatch(word, @"^[a-zA-Z0-9_]+$"))
+            // Check if the word is between 3 and 20 characters using regex
+            if (!Regex.IsMatch(word, @"^[a-zA-Z0-9_]{3,20}$"))
             {
-                Console.WriteLine("Habit name can only contain letters, numbers and underscores. Returning to menu\n");
+                Console.WriteLine("Habit name must be between 3 and 20 characters and can only contain letters, numbers, and underscores. ");
+                Console.WriteLine("Returning to menu\n");
                 return false;
             }
             return true;
         }
 
-        private static void DeleteHabit()
+        private void DeleteHabit()
         {
             //get input from user
             Console.WriteLine("Please insert the name of the habit you want to delete or 'e' to return to menu:");
@@ -241,11 +266,26 @@ namespace HabitLogger
             Console.WriteLine($"Habit '{habitName}' was deleted successfully\n");
         }
 
+        /// <summary>
+        /// Switch to the log menu
+        /// </summary>
+        private void SwitchToLogMenu()
+        {
+            //selection check
+            if (_activeHabit == "")
+            {
+                Console.WriteLine("No active habit set. Please set an active habit first.");
+                return;
+            }
+
+            _habitMenuDisplayed = false;
+        }
+
         //====Log Menu==============================================================================================
         /// <summary>
         /// Prints the main options for the user to choose from
         /// </summary>
-        internal static void PrintLogOptions()
+        internal void PrintLogOptions()
         {
             Console.WriteLine("\nPress the number of the option you want");
             Console.WriteLine("0 : Exit Program");
@@ -253,22 +293,24 @@ namespace HabitLogger
             Console.WriteLine("2 : Insert habit log");
             Console.WriteLine("3 : Update habit log");
             Console.WriteLine("4 : Delete habit log");
-            Console.WriteLine("5 : Delete all habit logs\n");
+            Console.WriteLine("5 : Delete all habit logs");
+            Console.WriteLine("6 : Return to habit selection menu\n");
+
         }
 
         /// <summary>
         /// Handles the user input and calls the appropriate method.
         /// </summary>
         /// <param name="input"> User's input number</param>
-        internal static void HandleLogMenuInput(int input)
+        internal void HandleLogMenuInput(int input)
         {
-            if(_connectionStringCopy == "")
+            if (_connectionStringCopy == "")
             {
                 Console.WriteLine("Connection string was not properly set. Exiting program");
                 Environment.Exit(0);
             }
 
-            switch(input) 
+            switch (input)
             {
                 case 0:
                     Console.WriteLine("Exiting program...");
@@ -289,6 +331,9 @@ namespace HabitLogger
                 case 5:
                     DeleteAllLogs();
                     break;
+                case 6:
+                    _habitMenuDisplayed = true;
+                    break;
                 default:
                     Console.WriteLine("Invalid option, please try again");
                     break;
@@ -300,12 +345,12 @@ namespace HabitLogger
         /// </summary>
         /// <param name="input">the</param>
         /// <returns> Whether a valid input was obtained</returns>
-        internal static bool TryGetChoiceInput(out int input, int optionsNum)
+        internal bool TryGetChoiceInput(out int input, int optionsNum)
         {
             string? inputStr = Console.ReadLine();
-            if(int.TryParse(inputStr, out input))
+            if (int.TryParse(inputStr, out input))
             {
-                if(!(input >= 0 && input <= optionsNum))
+                if (!(input >= 0 && input <= optionsNum))
                 {
                     Console.WriteLine($"Input must be between 0-{optionsNum}, please try again");
                     return false;
@@ -322,7 +367,7 @@ namespace HabitLogger
         /// <summary>
         /// Prints all logs in the database
         /// </summary>
-        private static void PrintAllLogs()
+        private void PrintAllLogs()
         {
             try
             {
@@ -330,7 +375,7 @@ namespace HabitLogger
                 {
                     connection.Open();
                     var command = connection.CreateCommand();
-                    command.CommandText = "SELECT * FROM DrinkingWater";
+                    command.CommandText = $"SELECT * FROM [{_activeHabit}]";
                     var reader = command.ExecuteReader();
                     while (reader.Read())
                     {
@@ -350,11 +395,11 @@ namespace HabitLogger
         /// <summary>
         /// Inserts a log in the database
         /// </summary>
-        private static void InsertLog()
+        private void InsertLog()
         {
             //Get date from user or return to menu
             var date = GetValidDateFromInput();
-            if(date == DateTime.MinValue)
+            if (date == DateTime.MinValue)
             {
                 Console.WriteLine("Returning to menu\n");
                 return;
@@ -367,7 +412,7 @@ namespace HabitLogger
                 {
                     connection.Open();
                     var command = connection.CreateCommand();
-                    command.CommandText = @"INSERT INTO DrinkingWater (Date)
+                    command.CommandText = $@"INSERT INTO [{_activeHabit}] (Date)
                                             VALUES ($date)";
                     command.Parameters.AddWithValue("$date", date);
 
@@ -389,7 +434,7 @@ namespace HabitLogger
         /// Helper method to get a valid date from the user.
         /// </summary>
         /// <returns> The DateTime from user's input.</returns>
-        private static DateTime GetValidDateFromInput()
+        private DateTime GetValidDateFromInput()
         {
             DateTime date = DateTime.MinValue;
             string? inputDateStr = "";
@@ -397,25 +442,25 @@ namespace HabitLogger
             while (true)//loop until valid date is entered
             {
                 inputDateStr = Console.ReadLine();
-                
-                if(inputDateStr == "0")//exit check
+
+                if (inputDateStr == "0")//exit check
                 {
                     return DateTime.MinValue;
                 }
 
-                if(!DateTime.TryParse(inputDateStr, out date))
+                if (!DateTime.TryParse(inputDateStr, out date))
                 {
                     Console.WriteLine("Invalid date format. Please insert date again (format:dd-mm-yy):");
                     continue;
                 }
 
-                if(date > DateTime.Now)
+                if (date > DateTime.Now)
                 {
                     Console.WriteLine("Date cannot be in the future. Please insert date again (format:dd-mm-yy):");
                     continue;
                 }
 
-                if(date < new DateTime(2024,1,1))
+                if (date < new DateTime(2024, 1, 1))
                 {
                     Console.WriteLine("Date cannot be before 2024. Please insert date again (format:dd-mm-yy):");
                     continue;
@@ -428,7 +473,7 @@ namespace HabitLogger
         /// <summary>
         ///  Updates a log in the database.
         /// </summary>
-        private static void UpdateLog()
+        private void UpdateLog()
         {
             //Chose id to update
             int delId;
@@ -449,7 +494,7 @@ namespace HabitLogger
                 {
                     connection.Open();
                     var command = connection.CreateCommand();
-                    command.CommandText = @"UPDATE DrinkingWater
+                    command.CommandText = $@"UPDATE [{_activeHabit}]
                                             SET Date = ($date)
                                             WHERE Id = ($id)";
                     command.Parameters.AddWithValue("$id", delId);
@@ -475,14 +520,14 @@ namespace HabitLogger
         /// <summary>
         ///  Deletes a log in the database.
         /// </summary>
-        private static void DeleteLog()
+        private void DeleteLog()
         {
             //Chose id to delete
             int delId;
-            if(!TryGetValidInput(out delId)) return;
+            if (!TryGetValidInput(out delId)) return;
 
             //check if user is sure
-            Console.WriteLine($"Are you sure you want to delete the log with id: {delId }? (y/n)");
+            Console.WriteLine($"Are you sure you want to delete the log with id: {delId}? (y/n)");
             if (!IsConfirmedRequest()) return;
 
             //Insert log in database
@@ -493,11 +538,11 @@ namespace HabitLogger
                     connection.Open();
                     var command = connection.CreateCommand();
                     //delete all rows from the table
-                    command.CommandText = @"DELETE FROM DrinkingWater
+                    command.CommandText = $@"DELETE FROM [{_activeHabit}]
                                             WHERE Id = ($id)";
                     command.Parameters.AddWithValue("$id", delId);
-                    int rowsAffected = command.ExecuteNonQuery(); 
-                    if(rowsAffected == 0)
+                    int rowsAffected = command.ExecuteNonQuery();
+                    if (rowsAffected == 0)
                     {
                         Console.WriteLine("No log with that id found. No changes were made\n");
                         return;
@@ -519,10 +564,10 @@ namespace HabitLogger
         /// </summary>
         /// <param name="id"></param>
         /// <returns></returns>
-        private static bool TryGetValidInput(out int id)
+        private bool TryGetValidInput(out int id)
         {
             string inputStr;
-            while(true)
+            while (true)
             {
                 Console.WriteLine("Please insert the id of the log you want to delete or 'e' to return to the previous menu:");
                 inputStr = Console.ReadLine();
@@ -543,12 +588,12 @@ namespace HabitLogger
         /// <summary>
         /// Deletes all logs in the database.
         /// </summary>
-        private static void DeleteAllLogs()
+        private void DeleteAllLogs()
         {
             //check if user is sure
             Console.WriteLine("Are you sure you want to delete all logs? (y/n)");
-            if(!IsConfirmedRequest()) return;
-            
+            if (!IsConfirmedRequest()) return;
+
             //Insert log in database
             try
             {
@@ -557,7 +602,7 @@ namespace HabitLogger
                     connection.Open();
                     var command = connection.CreateCommand();
                     //delete all rows from the table
-                    command.CommandText = @"DELETE FROM DrinkingWater";
+                    command.CommandText = $@"DELETE FROM [{_activeHabit}]";
                     var reader = command.ExecuteReader();
                     connection.Close();
                 }
@@ -571,7 +616,7 @@ namespace HabitLogger
             Console.WriteLine("All logs deleted successfully\n");
         }
 
-        private static bool IsConfirmedRequest()
+        private bool IsConfirmedRequest()
         {
             string? checkInput = Console.ReadLine();
             if (checkInput != "y")
