@@ -18,6 +18,10 @@ namespace HabitLogger
 
 
         //====Habit Menu====
+        /// <summary>
+        /// Display the habit menu options for the user to choose from.
+        /// </summary>
+        /// <param name="input"></param>
         internal static void PrintHabitOptions()
         {
             Console.WriteLine("\nPress the number of the option you want");
@@ -28,6 +32,10 @@ namespace HabitLogger
             Console.WriteLine("4 : Delete a habit\n");
         }
 
+        /// <summary>
+        /// Handle user's input and call the appropriate method.
+        /// </summary>
+        /// <param name="input"></param>
         internal static void HandleHabitMenuInput(int input)
         {
             if (_connectionStringCopy == "")
@@ -44,10 +52,15 @@ namespace HabitLogger
                     break;
                 case 1:
                     //View active habits
-                    GetActiveHabits();
+                    List<string> habits = GetActiveHabits();
+                    foreach (var habit in habits)
+                    {
+                        Console.WriteLine(habit);
+                    }
                     break;
                 case 2:
                     //Set active habit
+                    SetActiveHabit();
                     break;
                 case 3:
                     //Insert a new habit
@@ -62,8 +75,13 @@ namespace HabitLogger
             }
         }
 
-        private static void GetActiveHabits()
+        /// <summary>
+        /// Get all active habits from the database table names
+        /// </summary>
+        /// <returns></returns>
+        private static List<string> GetActiveHabits()
         {
+            List<string> habits = new List<string>();
             try
             {
                 using (var connection = new SqliteConnection(_connectionStringCopy))
@@ -78,7 +96,7 @@ namespace HabitLogger
                     Console.WriteLine("Active Habits:");
                     while (reader.Read())
                     {
-                        Console.WriteLine($"Habit: {reader.GetString(0)}");
+                        habits.Add(reader.GetString(0));
                     }
                     connection.Close();
                 }
@@ -87,32 +105,49 @@ namespace HabitLogger
             {
                 Console.WriteLine("An error occured while trying to insert a habit in the database:");
                 Console.WriteLine(ex.Message);
-                return;
             }
+            return habits;
         }
 
-        internal static void InsertHabit()
+        /// <summary>
+        /// Setting the active habit
+        /// </summary>
+        private static void SetActiveHabit()
         {
-            //habit name check
+            //get all active habits
+            List<string> habits = GetActiveHabits();
+
+            //get input from user
             Console.WriteLine("Please insert the name of the habit you want to add or 'e' to return to menu:");
             string? habitName = Console.ReadLine();
-            if (string.IsNullOrEmpty(habitName))
+
+            //habit name check
+            if (!IsValidWord(habitName)) return;
+
+            //check if habit exists
+            if (!habits.Contains(habitName))
             {
-                Console.WriteLine("Habit name cannot be empty. Returning to menu\n");
-                return;
-            }
-            if (habitName == "e")
-            {
+                Console.WriteLine("Habit requested does not exist. Please check the active habits list or insert a new one.");
                 Console.WriteLine("Returning to menu\n");
                 return;
             }
 
-            //safety check vs SQL injection attacks
-            if(!Regex.IsMatch(habitName, @"^[a-zA-Z0-9_]+$"))
-            {
-                Console.WriteLine("Habit name can only contain letters, numbers and underscores. Returning to menu\n");
-                return;
-            }
+            //set active habit
+            _activeHabit = habitName;
+            Console.WriteLine($"Active habit set to: {_activeHabit}");
+        }
+
+        /// <summary>
+        /// Create a new habit table in the database
+        /// </summary>
+        internal static void InsertHabit()
+        {
+            //get input from user
+            Console.WriteLine("Please insert the name of the habit you want to add or 'e' to return to menu:");
+            string? habitName = Console.ReadLine();
+            
+            //habit name check
+            if (!IsValidWord(habitName)) return;
 
             //Create table in database with the name of the habit
             try
@@ -136,6 +171,34 @@ namespace HabitLogger
                 return;
             }
             Console.WriteLine("A new Habit was created successfully\n");
+        }
+
+        /// <summary>
+        /// Helper method to check if the word is a valid habit name
+        /// </summary>
+        /// <param name="word"></param>
+        /// <returns></returns>
+        internal static bool IsValidWord(string? word)
+        {
+            if (string.IsNullOrEmpty(word))
+            {
+                Console.WriteLine("Habit name cannot be empty. Returning to menu\n");
+                return false;
+            }
+
+            if (word == "e")
+            {
+                Console.WriteLine("Returning to menu\n");
+                return false;
+            }
+
+            //safety check vs SQL injection attacks
+            if (!Regex.IsMatch(word, @"^[a-zA-Z0-9_]+$"))
+            {
+                Console.WriteLine("Habit name can only contain letters, numbers and underscores. Returning to menu\n");
+                return false;
+            }
+            return true;
         }
 
         //====Log Menu====
